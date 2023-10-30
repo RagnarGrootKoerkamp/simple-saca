@@ -278,6 +278,32 @@ impl<const BYTES: usize> SuffixArray<BYTES> {
     pub fn ctx(&self) -> usize {
         self.ctx
     }
+
+    pub fn stats<const CTX: usize>(&self, bytes: &[u8]) {
+        let mut cnt = vec![0; 124 * CTX + 1];
+        for (x, (i, j)) in self.idxs.iter().zip(self.idxs.iter().skip(1)).enumerate() {
+            let i = i.get_usize();
+            let j = j.get_usize();
+            if x % (1 << 25) == 0 {
+                eprint!("Done: {:>4.1}%\r", 100. * x as f32 / self.idxs.len() as f32);
+
+                // let wi: Vec<_> = bytes[i..i + 30].iter().map(|b| LUT[*b as usize]).collect();
+                // let wj: Vec<_> = bytes[j..j + 30].iter().map(|b| LUT[*b as usize]).collect();
+                // eprintln!("{x:>10} {i:>10} {j:>10} {wi:?} {wj:?}",);
+            }
+            let mut l = 0;
+            while l < 124 * CTX && LUT[bytes[i + l] as usize] == LUT[bytes[j + l] as usize] {
+                // eprintln!("{i} {j} {l}: {} == {}", bytes[i + l], bytes[j + l]);
+                l += 1;
+            }
+            // eprintln!("{i} {j} {l}: {} != {}", bytes[i + l], bytes[j + l]);
+            cnt[l] += 1;
+        }
+        eprintln!();
+        for (l, c) in cnt.iter().enumerate() {
+            eprintln!("{l:>3}: {c:>6}");
+        }
+    }
 }
 
 struct RevPacked {
@@ -536,6 +562,16 @@ mod tests {
             b.resize(b.len() + L * CTX, b'A');
             let s = SuffixArray::<5>::new_packed::<CTX>(&b, 2, 1);
             let correct = [3, 2, 1, 0];
+            assert_eq!(s.idxs().to_usize_vec(), correct);
+        }
+
+        {
+            const CTX: usize = 1;
+            let mut b = b"AAAAAAAAACAAAAAAAAAT".to_vec();
+            b.resize(b.len() + L * CTX, b'A');
+            let s = SuffixArray::<5>::new_packed::<CTX>(&b, 2, 1);
+            s.stats::<CTX>(&b);
+            let correct = [];
             assert_eq!(s.idxs().to_usize_vec(), correct);
         }
     }

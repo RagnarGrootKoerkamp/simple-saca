@@ -41,6 +41,13 @@ fn main() {
             _ => panic!("Context length of {} is not supported!", args.ctx),
         };
         eprintln!("Suffix array length: {}", suffix_array.idxs().len());
+        match args.ctx {
+            124 => suffix_array.stats::<1>(&seq),
+            248 => suffix_array.stats::<2>(&seq),
+            496 => suffix_array.stats::<4>(&seq),
+            992 => suffix_array.stats::<8>(&seq),
+            _ => panic!("Context length of {} is not supported!", args.ctx),
+        };
     }
 
     let elapsed_saca = start_saca.elapsed().as_secs_f64();
